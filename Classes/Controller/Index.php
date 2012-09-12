@@ -34,7 +34,7 @@ class Tx_IpIssuu_Controller_IndexController extends Tx_Extbase_MVC_Controller_Ac
 	/**
 	 * @var Tx_IpIssuu_Domain_Model_Flip
 	 */
-	protected $flip;
+	public $flip;
 
 	public function initializeAction(){
 		$this->hostname = t3lib_div::getIndpEnv('TYPO3_HOST_ONLY');
@@ -65,38 +65,8 @@ class Tx_IpIssuu_Controller_IndexController extends Tx_Extbase_MVC_Controller_Ac
 			// transparent Flash to be properly displayed
 		$this->flip->setFlashTransparent = $this->settings['flashTrans'];
 
-			// Add Data to header fpr Javascript and Flash incusion
-		$this->response->addAdditionalHeaderData(
-			'<script type="text/javascript" src="http://www.google.com/jsapi"></script>
-			<script type="text/javascript">google.load("swfobject", 2.2);</script>
-			<script type="text/javascript">
-			 	var attributes = { id: \''.$this->flip->getDocumentid().'\' };
-				var params = { '.$this->getTransparentMode().' allowfullscreen: \'true\', menu: \'false\' };
-				var flashvars = {
-					jsAPIClientDomain: \''.$this->hostname.'\',
-					mode: \'embed\',
-					backgroundColor:\''.$this->flip->getBackgroundcolor().'\',
-					layout: \''.$this->flip->getLayout().'\',
-					showFlipBtn: \''.$this->flip->getShowflipbtn().'\',
-					documentId: \''.$this->flip->getDocumentid().'\',
-					docName: \''.$this->flip->getDocname().'\',
-					username: \''.$this->flip->getUsername().'\',
-					loadingInfoText: \''.$this->flip->getLoadinginfotext().'\',
-					et: \''.time().'\',
-					er: \'71\'
-				};
-				swfobject.embedSWF(
-					"http://static.issuu.com/webembed/viewers/style1/v1/IssuuViewer.swf",
-					"'.$this->flip->getDocumentid().'",
-					"'.$this->flip->getWidth().'",
-					"'.$this->flip->getHeight().'",
-					"9.0.0","swfobject/expressInstall.swf",
-					flashvars,
-					params,
-					attributes
-				);
-			</script>'
-		);
+    	// Add Data to header fpr Javascript and Flash incusion
+		$this->response->addAdditionalHeaderData($this->getHeaderData());
 
 		$viewVars = array(
 			'issuuWidth' => $this->flip->getWidth().$this->flip->getUnit(),
@@ -105,7 +75,51 @@ class Tx_IpIssuu_Controller_IndexController extends Tx_Extbase_MVC_Controller_Ac
 		);
 			// assign to fluid template
 		$this->view->assignMultiple($viewVars);
-	}
+  }
+
+
+  public function getHeaderData(){
+
+			// Add Data to header fpr Javascript and Flash incusion
+	    return	'<script type="text/javascript" src="http://www.google.com/jsapi"></script>
+			<script type="text/javascript">google.load("swfobject", 2.2);</script>
+			<script type="text/javascript">
+			 	var attributes = { id: \''.$this->flip->getDocumentid().'\' };
+				var params = { '.$this->getTransparentMode().' allowfullscreen: \'true\', menu: \'false\' };
+				var flashvars = {
+					mode: \'mini\',
+					documentId: \''.$this->flip->getDocumentid().'\'
+				};
+				swfobject.embedSWF(
+					"http://static.issuu.com/webembed/viewers/style1/v2/IssuuReader.swf",
+					"'.$this->flip->getDocumentid().'",
+					"'.$this->flip->getWidth().'",
+					"'.$this->flip->getHeight().'",
+					"9.0.0","swfobject/expressInstall.swf",
+					flashvars,
+					params,
+					attributes
+				);
+			</script>';
+
+
+  }
+
+
+  /**
+	 * Parsing the provided Joomla Code and writes the excerpts to local variables
+	 *
+	 * @throws Exception
+	 * @param  string $embedCode
+	 * @return void
+	 */
+  public function parseJoomlaCode($embedCode){
+    try {
+      $this->parseJoomlaCodeV2($embedCode);
+    } catch(Exception $e){
+      $this->parseJoomlaCodeV1($embedCode);
+    }
+  }
 
 	/**
 	 * Parsing the provided Joomla Code and writes the excerpts to local variables
@@ -114,7 +128,7 @@ class Tx_IpIssuu_Controller_IndexController extends Tx_Extbase_MVC_Controller_Ac
 	 * @param  string $embedCode
 	 * @return void
 	 */
-	protected function parseJoomlaCode($embedCode){
+	protected function parseJoomlaCodeV1($embedCode){
 
 				// this expression should be matched as of today (2011-06-26)
 			$regex = "/\[issuu layout=(.*) showflipbtn=(true|false) documentid=([a-f0-9-]*) docname=(.*) loadinginfotext=(.*) showhtmllink=(true|false) tag=(.*) width=([0-9]*) height=([0-9]*) unit=(.*)\]/";
@@ -144,6 +158,32 @@ class Tx_IpIssuu_Controller_IndexController extends Tx_Extbase_MVC_Controller_Ac
 			throw new Exception("Wrong embeddingcode. Please visit www.issuu.com for details on the code", 1309094974);
 		}
 
+  }
+
+  	/**
+	 * Parsing the provided Joomla Code and writes the excerpts to local variables
+	 *
+	 * @throws Exception
+	 * @param  string $embedCode
+	 * @return void
+	 */
+	protected function parseJoomlaCodeV2($embedCode){
+
+
+    if(preg_match('/\[issuu ([^]]*)\]/i', $embedCode, $matches)){
+      $issuuValues = $matches[1];
+    } else {
+      throw new Exception("Wrong embeddingcode. Please visit www.issuu.com for details on the code", 1309094974);
+    }
+
+    $this->flip->setWidth($this->getValueWithDefault('/(?:^|[\s]+)width=([\S]*)/i', $issuuValues, 450));
+    $this->flip->setHeight($this->getValueWithDefault('/(?:^|[\s]+)height=([\S]*)/i', $issuuValues, 301));
+    $this->flip->setDocumentid($this->getValueWithDefault('/(?:^|[\s]+)documentId=([\S]*)/i', $issuuValues, ''));
+    $this->flip->setDocname($this->getValueWithDefault('/(?:^|[\s]+)docName=([\S]*)/i', $issuuValues, ''));
+    $this->flip->setUnit('px');
+    $this->flip->setLayout($this->getValueWithDefault('/(?:^|[\s]+)layout=([\S]*)/i', $issuuValues, ''));
+
+
 	}
 	/**
 	 * Experimental Use of wmode = transparent
@@ -155,5 +195,15 @@ class Tx_IpIssuu_Controller_IndexController extends Tx_Extbase_MVC_Controller_Ac
 		$this->flip->getFlashTransparent === 1 ? $wmode = 'wmode: \'transparent\',' : $wmode = '';
 
 		return $wmode;
-	}
+  }
+
+
+  protected function getValueWithDefault($regex, $params, $default){
+    $matchCount = preg_match_all($regex, $params, $matches);
+    if ($matchCount) {
+      return $matches[1][0];
+    } else {
+      return $default;
+    }
+  }
 }
