@@ -58,51 +58,7 @@ class Tx_IpIssuu_Controller_IndexController extends Tx_Extbase_MVC_Controller_Ac
 	public function indexAction(){
 
 			// Code from Flexform
-		$embedCode = $this->settings['jCode'];
-
-		$this->parseJoomlaCode($embedCode);
-
-			// transparent Flash to be properly displayed
-		$this->flip->setFlashTransparent = $this->settings['flashTrans'];
-
-    	// Add Data to header fpr Javascript and Flash incusion
-		$this->response->addAdditionalHeaderData($this->getHeaderData());
-
-		$viewVars = array(
-			'issuuWidth' => $this->flip->getWidth().$this->flip->getUnit(),
-			'issuuHeight' => $this->flip->getHeight().$this->flip->getUnit(),
-			'issuId' => $this->flip->getDocumentid()
-		);
-			// assign to fluid template
-		$this->view->assignMultiple($viewVars);
-  }
-
-
-  public function getHeaderData(){
-
-			// Add Data to header fpr Javascript and Flash incusion
-	    return	'<script type="text/javascript" src="http://www.google.com/jsapi"></script>
-			<script type="text/javascript">google.load("swfobject", 2.2);</script>
-			<script type="text/javascript">
-			 	var attributes = { id: \''.$this->flip->getDocumentid().'\' };
-				var params = { '.$this->getTransparentMode().' allowfullscreen: \'true\', menu: \'false\' };
-				var flashvars = {
-					mode: \'mini\',
-					documentId: \''.$this->flip->getDocumentid().'\'
-				};
-				swfobject.embedSWF(
-					"http://static.issuu.com/webembed/viewers/style1/v2/IssuuReader.swf",
-					"'.$this->flip->getDocumentid().'",
-					"'.$this->flip->getWidth().'",
-					"'.$this->flip->getHeight().'",
-					"9.0.0","swfobject/expressInstall.swf",
-					flashvars,
-					params,
-					attributes
-				);
-			</script>';
-
-
+		$this->view->assign('code', $this->settings['jCode']);
   }
 
 

@@ -10,7 +10,7 @@
 				<el>
 					<settings.jCode>
 						<TCEforms>
-							<label>Joomla Code for Issuu</label>
+							<label>Embed Code for Issuu</label>
 							<config>
 								<size>32</size>
 								<max>1000</max>
